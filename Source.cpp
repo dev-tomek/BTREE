@@ -131,6 +131,17 @@ Node* Search(int v, Node* root)
     return Search(v, root->children[i]);
 }
 
+void Print(Node* node)
+{
+    int i;
+    for (i = 0; i < node->keyCount; i++)
+    {
+        if (!node->isLeaf) Print(node->children[i]);
+        std::cout << node->keys[i] << " ";
+    }
+    if (!node->isLeaf) Print(node->children[i]);
+}
+
 int main()
 {
     Btree* btree = new Btree;
@@ -163,6 +174,9 @@ int main()
             break;
 
         case 'P':
+            if (btrinit == 0) break;
+            Print(btree->root);
+            std::cout << std::endl;
             break;
 
         case 'L':
