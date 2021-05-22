@@ -2,190 +2,189 @@
 
 struct Node
 {
-	int* keys; //key array
-	int t; //order
-	Node** C; //array of children
-	int n; //number of keys in a node
-	bool leaf;
+    int* keys; //key array
+    int order; //order
+    Node** children; //array of children
+    int keyCount; //number of keys in a node
+    bool isLeaf;
 };
 
 struct Btree
 {
-	Node* root;
-	int t;
+    Node* root;
+    int t;
 };
 
 void initializeBtree(int order, Btree* btr)
 {
-	btr->root = NULL;
-	btr->t = order;
+    btr->root = NULL;
+    btr->t = order;
 }
 
 Node* createNode(int order, bool isLeaf)
 {
-	Node* newNode = new Node;
-	newNode->t = order;
-	newNode->leaf = isLeaf;
-	newNode->keys = new int[2 * order - 1]; //allocating max 2*order-1 int memory for keys
-	newNode->C = new Node* [2 * order]; //allocating memory for children
-	newNode->n = 0;
-	return newNode;
+    Node* newNode = new Node;
+    newNode->order = order;
+    newNode->isLeaf = isLeaf;
+    newNode->keys = new int[2 * order - 1]; //allocating max 2*order-1 int memory for keys
+    newNode->children = new Node * [2 * order]; //allocating memory for children
+    newNode->keyCount = 0;
+    return newNode;
 }
 
-void splitChild(int i, Node* y, Node* xd) 
+void splitChild(int i, Node* child, Node* parent)
 {
-	Node* z = createNode(y->t, y->leaf);
-	z->n = y->t - 1;
+    Node* z = createNode(child->order, child->isLeaf);
+    z->keyCount = child->order - 1;
 
-	for (int j = 0; j < y->t - 1; j++)
-	{
-		z->keys[j] = y->keys[j + y->t];
-	}
-		
-	if (y->leaf == false) 
-	{
-		for (int j = 0; j < y->t; j++)
-		{
-			z->C[j] = y->C[j + y->t];
-		}	
-	}
+    for (int j = 0; j < child->order - 1; j++)
+    {
+        z->keys[j] = child->keys[j + child->order];
+    }
 
-	y->n = y->t - 1;
+    if (child->isLeaf == false)
+    {
+        for (int j = 0; j < child->order; j++)
+        {
+            z->children[j] = child->children[j + child->order];
+        }
+    }
 
-	for (int j = xd->n; j >= i + 1; j--)
-	{
-		xd->C[j + 1] = xd->C[j];
-	}
-		
-	xd->C[i + 1] = z;
+    child->keyCount = child->order - 1;
 
-	for (int j = xd->n - 1; j >= i; j--)
-	{
-		xd->keys[j + 1] = xd->keys[j];
-	}
-		
+    for (int j = parent->keyCount; j >= i + 1; j--)
+    {
+        parent->children[j + 1] = parent->children[j];
+    }
 
-	xd->keys[i] = y->keys[y->t - 1];
-	xd->n = xd->n + 1;
+    parent->children[i + 1] = z;
+
+    for (int j = parent->keyCount - 1; j >= i; j--)
+    {
+        parent->keys[j + 1] = parent->keys[j];
+    }
+
+
+    parent->keys[i] = child->keys[child->order - 1];
+    parent->keyCount = parent->keyCount + 1;
 }
 
-void insertNonFull(int k, Node* node) 
+void InsertDeficient(int k, Node* node)
 {
-	int i = node->n - 1;
+    int i = node->keyCount - 1;
 
-	if (node->leaf == true) {
-		while (i >= 0 && node->keys[i] > k) 
-		{
-			node->keys[i + 1] = node->keys[i];
-			i--;
-		}
+    if (node->isLeaf == true) {
+        while (i >= 0 && node->keys[i] > k)
+        {
+            node->keys[i + 1] = node->keys[i];
+            i--;
+        }
 
-		node->keys[i + 1] = k;
-		node->n = node->n + 1;
-	}
-	else 
-	{
-		while (i >= 0 && node->keys[i] > k) i--;
+        node->keys[i + 1] = k;
+        node->keyCount = node->keyCount + 1;
+    }
+    else
+    {
+        while (i >= 0 && node->keys[i] > k) i--;
 
-		if (node->C[i + 1]->n == 2* node->t - 1) 
-		{
-			splitChild(i + 1, node->C[i + 1], node);
-			if (node->keys[i + 1] < k) i++;
-		}
-		insertNonFull(k, node->C[i + 1]);
-	}
+        if (node->children[i + 1]->keyCount == 2 * node->order - 1)
+        {
+            splitChild(i + 1, node->children[i + 1], node);
+            if (node->keys[i + 1] < k) i++;
+        }
+        InsertDeficient(k, node->children[i + 1]);
+    }
 }
 
-void Insert(int v, Btree* btr) 
+void Insert(int v, Btree* btr)
 {
-	if (btr->root == NULL) //when there is no root
-	{
-		btr->root = createNode(btr->t, true); //creating root node of order t
-		btr->root->keys[0] = v; //setting first key of a node to the value
-		btr->root->n = 1; //saving that root has 1 element
-	}
-	else
-	{
-		if (btr->root->n == 2 * btr->t - 1) //when the node is full
-		{
-			Node* s = createNode(btr->t, false); //creating a new parent node
-			s->C[0] = btr->root; //his first children is root
-			splitChild(0, btr->root, s);
+    if (btr->root == NULL) //when there is no root
+    {
+        btr->root = createNode(btr->t, true); //creating root node of order t
+        btr->root->keys[0] = v; //setting first key of a node to the value
+        btr->root->keyCount = 1; //saving that root has 1 element
+    }
+    else
+    {
+        if (btr->root->keyCount == 2 * btr->t - 1) //when the node is full
+        {
+            Node* newParent = createNode(btr->t, false); //creating a new parent node
+            newParent->children[0] = btr->root; //his first children is root
+            splitChild(0, btr->root, newParent);
 
-			int i = 0;
-			if (s->keys[0] < v) i++;
-			insertNonFull(v, s->C[i]);
+            int i = 0;
+            if (newParent->keys[0] < v) i++;
+            InsertDeficient(v, newParent->children[i]);
 
-			btr->root = s;
-		}
-		else insertNonFull(v, btr->root);
-	}
+            btr->root = newParent;
+        }
+        else InsertDeficient(v, btr->root);
+    }
 }
 
-Node* Search(int k, Node* root) 
+Node* Search(int v, Node* root)
 {
-	int i = 0;
-	while (i < root->n && k > root->keys[i]) i++;
-
-	if (root->keys[i] == k) return root;
-
-	if (root->leaf == true) return NULL;
-
-	return Search(k, root->C[i]);
+    int i = 0;
+    while (i < root->keyCount && v > root->keys[i]) i++;
+    if (root->keys[i] == v) return root;
+    if (root->isLeaf == true) return NULL;
+    return Search(v, root->children[i]);
 }
 
 int main()
 {
-	Btree* btree = new Btree;
-	char c = ' ';
-	int v;
-	int btrinit = 0;
-	while (c != 'X')
-	{
-		std::cin >> c;
-		switch (c)
-		{
-		case 'I':
-			if (btrinit == 1) break;
-			std::cin >> v;
-			initializeBtree(v, btree);
-			btrinit = 1;
-			break;
-		case 'A':
-			if (btrinit == 0) break;
-			std::cin >> v;
-			Insert(v, btree);
-			break;
-		case '?':
-			if (btrinit == 0) break;
-			std::cin >> v;
-			if (Search(v, btree->root) != NULL)
-			{
-				std::cout << v << " +" << std::endl;
-			}
-			else
-			{
-				std::cout << v << " -" << std::endl;
-			}
-			break;
-		case 'P':
-			break;
-		case 'L':
-			std::cin >> v;
-			break;
-		case 'S':
-			break;
-		case 'R':
-			std::cin >> v;
-			break;
-		case 'X':
-			break;
-		case 'C':
-			break;
+    Btree* btree = new Btree;
+    char c = ' ';
+    int v;
+    int btrinit = 0;
+    while (c != 'X')
+    {
+        std::cin >> c;
+        switch (c)
+        {
+        case 'I':
+            if (btrinit == 1) break;
+            std::cin >> v;
+            initializeBtree(v, btree);
+            btrinit = 1;
+            break;
 
-		default:
-			std::cout << "Wrong command" << std::endl;
-			break;
-		}
-	}
+        case 'A':
+            if (btrinit == 0) break;
+            std::cin >> v;
+            Insert(v, btree);
+            break;
+
+        case '?':
+            if (btrinit == 0) break;
+            std::cin >> v;
+            if (Search(v, btree->root) != NULL) std::cout << v << " +" << std::endl;
+            else std::cout << v << " -" << std::endl;
+            break;
+
+        case 'P':
+            break;
+
+        case 'L':
+            std::cin >> v;
+            break;
+
+        case 'S':
+            break;
+
+        case 'R':
+            std::cin >> v;
+            break;
+
+        case 'X':
+            break;
+
+        case 'C':
+            break;
+
+        default:
+            std::cout << "Wrong command" << std::endl;
+            break;
+        }
+    }
 }
