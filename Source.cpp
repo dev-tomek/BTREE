@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 struct Node
 {
@@ -142,9 +143,25 @@ void Print(Node* node)
     if (!node->isLeaf) Print(node->children[i]);
 }
 
+void Save(Node* node, std::string& saveString)
+{
+    int i;
+    char buffer[10];
+    saveString += "( ";
+    for (i = 0; i < node->keyCount; i++)
+    {
+        if (!node->isLeaf) Save(node->children[i], saveString);
+        saveString += std::to_string(node->keys[i]);
+        saveString += " ";
+    }
+    if (!node->isLeaf) Save(node->children[i], saveString);
+    saveString += ") ";
+}
+
 int main()
 {
     Btree* btree = new Btree;
+    std::string save;
     char c = ' ';
     int v;
     int btrinit = 0;
@@ -184,6 +201,10 @@ int main()
             break;
 
         case 'S':
+            if (btrinit == 0) break;
+            std::cout << btree->root->order << std::endl;
+            Save(btree->root, save);
+            std::cout << save << std::endl;
             break;
 
         case 'R':
